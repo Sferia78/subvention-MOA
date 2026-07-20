@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulateur Subventions MOA — v3 Sprint 1</title>
+<style>
+  :root{
+    --accent:#1F4E79; --accent-light:#E8EEF7; --ok:#2E7D32; --maybe:#B26A00; --no:#9E9E9E;
+    --warn:#B71C1C; --bg:#F4F6F9; --card:#fff; --txt:#1a1a1a; --grey:#666;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{font-family:'Segoe UI',system-ui,sans-serif; background:var(--bg); color:var(--txt); font-size:14px;}
+  header{background:var(--accent); color:#fff; padding:14px 24px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;}
+  header h1{font-size:18px; font-weight:600;}
+  header p{font-size:11.5px; opacity:.85; margin-top:2px;}
+  .opbar{display:flex; gap:6px; align-items:center; flex-wrap:wrap;}
+  .opbar select{padding:7px 9px; border-radius:6px; border:none; font-size:13px; min-width:180px;}
+  .opbar button{background:rgba(255,255,255,.15); color:#fff; border:1px solid rgba(255,255,255,.4); border-radius:6px; padding:7px 11px; font-size:12px; cursor:pointer; font-weight:600;}
+  .opbar button:hover{background:rgba(255,255,255,.28);}
+  .wrap{display:flex; gap:16px; padding:16px 24px; align-items:flex-start; flex-wrap:wrap;}
+  .panel{background:var(--card); border-radius:10px; box-shadow:0 1px 4px rgba(0,0,0,.08); padding:18px;}
+  #formPanel{width:340px; flex-shrink:0;}
+  #results{flex:1; min-width:400px;}
+  h2{font-size:15px; color:var(--accent); margin-bottom:12px;}
+  h3{font-size:13px; color:var(--accent); margin:14px 0 6px;}
+  label{display:block; font-size:12px; color:var(--grey); margin:10px 0 3px; font-weight:600;}
+  input,select{width:100%; padding:7px 9px; border:1px solid #ccd4de; border-radius:6px; font-size:13px; background:#fff;}
+  input:focus,select:focus{outline:2px solid var(--accent-light); border-color:var(--accent);}
+  .row2{display:flex; gap:8px;} .row2>div{flex:1;}
+  button.primary{background:var(--accent); color:#fff; border:none; border-radius:6px; padding:10px 16px; font-size:14px; font-weight:600; cursor:pointer; width:100%; margin-top:16px;}
+  button.primary:hover{background:#173B5C;}
+  .mini{background:#e4e9f0; color:var(--accent); border:none; border-radius:6px; padding:6px 10px; font-size:12px; margin-top:8px; cursor:pointer; font-weight:600;}
+  .mini:hover{background:#d4dce8;}
+  .phrow{display:flex; gap:6px; margin-top:6px; align-items:center;}
+  .phrow input[type=text]{flex:1;} .phrow input[type=date]{width:140px;}
+  .phrow .del{background:none; border:none; color:var(--warn); font-size:16px; cursor:pointer; padding:0 4px; font-weight:700;}
+  .tabs{display:flex; gap:4px; margin-bottom:14px; flex-wrap:wrap;}
+  .tab{padding:7px 14px; border-radius:20px; font-size:13px; cursor:pointer; background:#e4e9f0; color:#333; border:none; font-weight:600;}
+  .tab.active{background:var(--accent); color:#fff;}
+  .disp{border:1px solid #e2e7ee; border-left:4px solid var(--no); border-radius:8px; padding:12px 14px; margin-bottom:10px;}
+  .disp.ok{border-left-color:var(--ok);} .disp.maybe{border-left-color:var(--maybe);}
+  .disp h4{font-size:14px;} .disp .fin{font-size:11px; color:var(--grey);}
+  .badge{display:inline-block; font-size:10.5px; font-weight:700; padding:2px 8px; border-radius:10px; margin-left:6px; vertical-align:middle;}
+  .b-ok{background:#E3F1E4; color:var(--ok);} .b-maybe{background:#FBEFDD; color:var(--maybe);} .b-no{background:#eee; color:var(--no);}
+  .disp p{font-size:12.5px; margin-top:5px; color:#333;}
+  .disp .reason{font-size:12px; color:var(--grey); font-style:italic; margin-top:4px;}
+  .disp .meta{font-size:10.5px; color:var(--no); margin-top:5px;}
+  .disp a{font-size:11px; color:var(--accent);}
+  table{width:100%; border-collapse:collapse; font-size:12.5px;}
+  th{background:var(--accent-light); color:var(--accent); text-align:left; padding:7px 9px; font-size:11.5px;}
+  td{padding:7px 9px; border-bottom:1px solid #edf0f4; vertical-align:top;}
+  .chip{display:inline-block; padding:2px 8px; border-radius:9px; font-size:10.5px; font-weight:700;}
+  .c-action{background:#E3EDF7; color:var(--accent);} .c-limite{background:#FBE2E2; color:var(--warn);} .c-info{background:#eee; color:#555;}
+  .alert{background:#FBE2E2; border-left:4px solid var(--warn); border-radius:6px; padding:10px 13px; margin-bottom:8px; font-size:13px;}
+  .alert b{color:var(--warn);}
+  .kpis{display:flex; gap:10px; margin-bottom:14px; flex-wrap:wrap;}
+  .kpi{background:var(--accent-light); border-radius:8px; padding:10px 14px; flex:1; min-width:130px;}
+  .kpi .v{font-size:16px; font-weight:700; color:var(--accent);} .kpi .l{font-size:11px; color:var(--grey);}
+  .footer{padding:10px 24px 24px; font-size:11px; color:var(--grey);}
+  .late{color:var(--warn); font-weight:700;}
+  .phase-block{margin-bottom:16px;}
+  .phase-head{background:var(--accent); color:#fff; border-radius:8px 8px 0 0; padding:8px 14px; font-size:13.5px; font-weight:700;}
+  .phase-head span{font-weight:400; opacity:.8; font-size:12px; margin-left:8px;}
+  .phase-body{border:1px solid #e2e7ee; border-top:none; border-radius:0 0 8px 8px; padding:6px 14px;}
+  .pj{display:flex; gap:10px; padding:7px 0; border-bottom:1px solid #edf0f4; font-size:12.5px; align-items:baseline;}
+  .pj:last-child{border-bottom:none;}
+  .pj .dt{color:var(--grey); white-space:nowrap; width:88px; flex-shrink:0;}
+  .pj .dsp{color:var(--grey); font-size:11px;}
+  .empty-phase{color:var(--no); font-style:italic; font-size:12px; padding:7px 0;}
+  .exportbar{margin-bottom:10px; text-align:right; display:flex; gap:8px; justify-content:flex-end;}
+  .exportbar button{background:var(--accent); color:#fff; border:none; border-radius:6px; padding:7px 14px; font-size:12.5px; cursor:pointer; font-weight:600;}
+  @media print{ #formPanel button,.tabs,.exportbar,.opbar{display:none;} .wrap{display:block;} #formPanel{width:100%;} }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Simulateur Subventions MOA <span style="font-size:12px;opacity:.7">v3 · Sprint 1</span></h1>
+    <p id="metaline">Base de dispositifs chargée…</p>
+  </div>
+  <div class="opbar">
+    <select id="opSelect" onchange="switchOp(this.value)"></select>
+    <button onclick="newOp()">+ Nouvelle</button>
+    <button onclick="dupOp()">Dupliquer</button>
+    <button onclick="delOp()">Supprimer</button>
+    <button onclick="exportOps()">⬇ Sauvegarde</button>
+    <button onclick="document.getElementById('importFile').click()">⬆ Restaurer</button>
+    <input type="file" id="importFile" accept=".json" style="display:none" onchange="importOps(this)">
+  </div>
+</header>
+<div class="wrap">
+  <div class="panel" id="formPanel">
+    <h2>1. Opération</h2>
+    <label>Adresse du bâtiment (pré-remplissage open data)</label>
+    <input id="adresse" placeholder="ex. 6 promenée supérieure, Ivry-sur-Seine" onchange="saveCurrent()">
+    <button type="button" class="mini" style="width:100%" onclick="prefill()" id="prefillBtn">🔍 Pré-remplir depuis l'adresse (BAN · ADEME DPE · France Chaleur Urbaine)</button>
+    <div id="prefillResult" style="font-size:11.5px; color:var(--grey); margin-top:6px;"></div>
+    <label>Nom de l'opération</label><input id="nom" value="Réhab. cité — 120 lgts" onchange="saveCurrent()">
+    <div class="row2">
+      <div><label>Type d'opération</label>
+      <select id="type" onchange="saveCurrent()">
+        <option value="rehab">Réhabilitation</option>
+        <option value="neuf">Construction neuve</option>
+        <option value="acqam">Acquisition-amélioration</option>
+        <option value="demol">Démolition-reconstitution</option>
+      </select></div>
+      <div><label>Nb logements</label><input id="nb" type="number" value="120" onchange="saveCurrent()"></div>
+    </div>
+    <div class="row2">
+      <div><label>Coût travaux HT (€)</label><input id="cout" type="number" value="6000000" onchange="saveCurrent()"></div>
+      <div><label>Année conventionnement</label><input id="conv" type="number" value="1978" onchange="saveCurrent()"></div>
+    </div>
+    <div class="row2">
+      <div><label>DPE avant</label><select id="dpe1" onchange="saveCurrent()"><option>G</option><option selected>F</option><option>E</option><option>D</option><option>C</option><option value="">N/A (neuf)</option></select></div>
+      <div><label>DPE cible</label><select id="dpe2" onchange="saveCurrent()"><option>A</option><option selected>B</option><option>C</option><option>D</option></select></div>
+    </div>
+    <div class="row2">
+      <div><label>Île-de-France ?</label><select id="idf" onchange="saveCurrent()"><option value="1" selected>Oui</option><option value="0">Non</option></select></div>
+      <div><label>En QPV / NPNRU ?</label><select id="qpv" onchange="saveCurrent()"><option value="0" selected>Non</option><option value="1">Oui</option></select></div>
+    </div>
+    <div class="row2">
+      <div><label>Réseau de chaleur proche ?</label><select id="rdc" onchange="saveCurrent()"><option value="0" selected>Non</option><option value="1">Oui</option></select></div>
+      <div><label>Audit énergétique fait ?</label><select id="audit" onchange="saveCurrent()"><option value="1" selected>Oui</option><option value="0">Non</option></select></div>
+    </div>
+    <h3>Jalons financement</h3>
+    <label>Dépôt des demandes de financement</label><input id="dDepot" type="date" value="2026-10-01" onchange="saveCurrent()">
+    <label>Signature des marchés de travaux</label><input id="dMarche" type="date" value="2027-03-01" onchange="saveCurrent()">
+    <label>Ordre de service (début travaux)</label><input id="dOS" type="date" value="2027-05-01" onchange="saveCurrent()">
+    <label>Livraison / réception prévue</label><input id="dLiv" type="date" value="2028-11-01" onchange="saveCurrent()">
+    <h3>Phasage de l'opération</h3>
+    <div id="phases"></div>
+    <button type="button" class="mini" onclick="addPhase()">+ Ajouter une étape</button>
+    <button class="primary" onclick="run()">Analyser l'opération →</button>
+  </div>
+
+  <div class="panel" id="results">
+    <h2 id="resTitle">2. Résultats</h2>
+    <div class="kpis" id="kpis"></div>
+    <div class="tabs">
+      <button class="tab active" onclick="show('dispos',this)">Dispositifs</button>
+      <button class="tab" onclick="show('echeancier',this)">Échéancier</button>
+      <button class="tab" onclick="show('phasage',this)">Par phase</button>
+      <button class="tab" onclick="show('alertes',this)">Alertes</button>
+      <button class="tab" onclick="show('dash',this);renderDash()">⏰ Échéances (toutes ops)</button>
+      <button class="tab" onclick="show('folio',this);renderFolio()">📁 Portefeuille</button>
+    </div>
+    <div id="v-dispos"></div>
+    <div id="v-echeancier" style="display:none"></div>
+    <div id="v-phasage" style="display:none"></div>
+    <div id="v-alertes" style="display:none"></div>
+    <div id="v-dash" style="display:none"></div>
+    <div id="v-folio" style="display:none"></div>
+  </div>
+</div>
+<div class="footer">
+  ⚠ Outil d'aide à la décision — ne remplace ni les textes ni l'instruction des financeurs. Base de dispositifs : <b>data/dispositifs.js</b> (versionnable Git, chaque fiche datée et sourcée).
+</div>
+
+<script src="dispositifs.js"></script>
+<script>
+const BASE=window.DISPOSITIFS.items, META=window.DISPOSITIFS.meta;
+document.getElementById('metaline').textContent="Base v"+META.version+" · mise à jour "+META.updated+" · "+BASE.length+" dispositifs · 100 % sources ouvertes";
+
+const addM=(dt,m)=>{const d=new Date(dt); d.setMonth(d.getMonth()+m); return d;};
+const F=d=>d.toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric'});
+const v=id=>document.getElementById(id).value;
+const setv=(id,val)=>{document.getElementById(id).value=val;};
+const eur=n=>n.toLocaleString('fr-FR')+' €';
+const FIELDS=['adresse','nom','type','nb','cout','conv','dpe1','dpe2','idf','qpv','rdc','audit','dDepot','dMarche','dOS','dLiv'];
+
+// ============ SPRINT 2 : PRÉ-REMPLISSAGE OPEN DATA ============
+async function prefill(){
+  const adr=v('adresse').trim();
+  const out=document.getElementById('prefillResult');
+  const btn=document.getElementById('prefillBtn');
+  if(!adr){ out.innerHTML='Saisis une adresse d\'abord.'; return; }
+  if(location.protocol==='file:'){ out.innerHTML='⚠ Le pré-remplissage nécessite la version hébergée (les API bloquent les fichiers locaux).'; return; }
+  btn.disabled=true; btn.textContent='⏳ Interrogation des API ouvertes…';
+  const lines=[];
+  try{
+    // 1. Géocodage BAN
+    const ban=await (await fetch('https://api-adresse.data.gouv.fr/search/?limit=1&q='+encodeURIComponent(adr))).json();
+    if(!ban.features||!ban.features.length) throw new Error('adresse introuvable (BAN)');
+    const f=ban.features[0], [lon,lat]=f.geometry.coordinates, pr=f.properties;
+    const dept=pr.citycode.substring(0,2);
+    lines.push('📍 <b>'+pr.label+'</b>');
+    // IDF
+    const isIdf=['75','77','78','91','92','93','94','95'].includes(dept);
+    setv('idf', isIdf?'1':'0');
+    lines.push('Île-de-France : '+(isIdf?'oui':'non'));
+    // 2. EPCI / délégataire probable
+    try{
+      const com=await (await fetch('https://geo.api.gouv.fr/communes/'+pr.citycode+'?fields=epci')).json();
+      if(com.epci) lines.push('EPCI/EPT : '+com.epci.nom+' <span style="color:var(--no)">(délégataire aides à la pierre probable — à confirmer)</span>');
+    }catch(e){ lines.push('EPCI : indisponible'); }
+    // 3. DPE réels du secteur (ADEME data-fair, rayon 100 m) — datasets/champs testés en cascade
+    try{
+      const datasets=['dpe03existant','dpe-v2-logements-existants','dpe-france'];
+      const fields=['etiquette_dpe','classe_bilan_dpe','classe_consommation_energie'];
+      let cnt={}, tot=0, used='';
+      for(const ds of datasets){
+        try{
+          const r=await fetch('https://data.ademe.fr/data-fair/api/v1/datasets/'+ds+'/lines?size=100&geo_distance='+lon+','+lat+',100');
+          if(!r.ok) continue;
+          const dpe=await r.json();
+          if(!dpe.results||!dpe.results.length) continue;
+          const fld=fields.find(f=>dpe.results.some(x=>x[f]));
+          if(!fld) continue;
+          dpe.results.forEach(x=>{ const c=x[fld]; if(c&&/^[A-G]$/.test(c)) cnt[c]=(cnt[c]||0)+1; });
+          tot=Object.values(cnt).reduce((a,b)=>a+b,0);
+          if(tot){ used=ds; break; }
+        }catch(e){}
+      }
+      if(tot){
+        const modal=Object.entries(cnt).sort((a,b)=>b[1]-a[1])[0][0];
+        setv('dpe1', modal);
+        lines.push('DPE ADEME ('+used+', rayon 100 m, '+tot+' diagnostics) : classe majoritaire <b>'+modal+'</b> — répartition '+
+          Object.entries(cnt).sort().map(([k,n])=>k+':'+n).join(' · '));
+      } else lines.push('DPE ADEME : aucun diagnostic exploitable à 100 m (saisir à la main)');
+    }catch(e){ lines.push('DPE ADEME : API indisponible'); }
+    // 4. Réseau de chaleur (France Chaleur Urbaine)
+    try{
+      const fcu=await (await fetch('https://france-chaleur-urbaine.beta.gouv.fr/api/v1/eligibility?lat='+lat+'&lon='+lon)).json();
+      const near=fcu.isEligible||(typeof fcu.distance==='number'&&fcu.distance<200);
+      setv('rdc', near?'1':'0');
+      lines.push('Réseau de chaleur : '+(near?'<b>oui</b>':'non')+(typeof fcu.distance==='number'?' (à '+Math.round(fcu.distance)+' m)':''));
+    }catch(e){ lines.push('France Chaleur Urbaine : API indisponible'); }
+    // 5. QPV — pas d'API point-in-polygon publique fiable : lien de vérification
+    lines.push('QPV : <a href="https://sig.ville.gouv.fr/adresses/recherche" target="_blank">vérifier sur sig.ville.gouv.fr ↗</a> puis renseigner le champ');
+    saveCurrent();
+  }catch(e){ lines.push('⚠ '+e.message); }
+  out.innerHTML=lines.join('<br>');
+  btn.disabled=false; btn.textContent='🔍 Pré-remplir depuis l\'adresse (BAN · ADEME DPE · France Chaleur Urbaine)';
+}
+const DEF_PHASES=[
+  {n:"Faisabilité / montage", d:"2026-06-01"},{n:"Dépôt PC / autorisations", d:"2026-09-01"},
+  {n:"Dépôt des financements", d:"2026-10-01"},{n:"DCE / consultation entreprises", d:"2026-12-01"},
+  {n:"Signature des marchés", d:"2027-03-01"},{n:"OS / démarrage chantier", d:"2027-05-01"},
+  {n:"Chantier", d:"2027-06-01"},{n:"Livraison / réception", d:"2028-11-01"},{n:"GPA / clôture", d:"2028-12-01"}];
+
+// ============ MULTI-OPÉRATIONS ============
+let OPS=[], CUR=0;
+function defaultOp(name){
+  const f={}; FIELDS.forEach(id=>f[id]=v(id)); f.nom=name||f.nom;
+  return {id:Date.now()+''+Math.floor(Math.random()*1000), form:f, phases:JSON.parse(JSON.stringify(DEF_PHASES))};
+}
+function load(){
+  try{ const s=localStorage.getItem('simu_v3'); if(s){ const d=JSON.parse(s); OPS=d.ops; CUR=Math.min(d.cur||0,OPS.length-1); } }catch(e){}
+  if(!OPS.length){ OPS=[defaultOp()]; CUR=0; }
+}
+function persist(){ try{ localStorage.setItem('simu_v3', JSON.stringify({ops:OPS, cur:CUR})); }catch(e){} }
+function saveCurrent(){ const o=OPS[CUR]; FIELDS.forEach(id=>o.form[id]=v(id)); persist(); renderSelect(); }
+function loadForm(){ const o=OPS[CUR]; FIELDS.forEach(id=>setv(id,o.form[id]!==undefined?o.form[id]:'')); renderPhases(); }
+function renderSelect(){
+  document.getElementById('opSelect').innerHTML=OPS.map((o,i)=>'<option value="'+i+'"'+(i===CUR?' selected':'')+'>'+(o.form.nom||'Sans nom')+'</option>').join('');
+}
+function switchOp(i){ CUR=+i; persist(); loadForm(); run(); }
+function newOp(){ OPS.push(defaultOp('Nouvelle opération')); CUR=OPS.length-1; persist(); renderSelect(); loadForm(); run(); }
+function dupOp(){ const c=JSON.parse(JSON.stringify(OPS[CUR])); c.id=Date.now()+''; c.form.nom+=' (copie)'; OPS.push(c); CUR=OPS.length-1; persist(); renderSelect(); loadForm(); run(); }
+function delOp(){ if(OPS.length<=1){alert('Au moins une opération requise.');return;} if(!confirm('Supprimer « '+OPS[CUR].form.nom+' » ?'))return; OPS.splice(CUR,1); CUR=0; persist(); renderSelect(); loadForm(); run(); }
+function exportOps(){
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([JSON.stringify({exported:new Date().toISOString(), ops:OPS},null,2)],{type:'application/json'}));
+  a.download='simulateur_operations.json'; a.click();
+}
+function importOps(inp){
+  const f=inp.files[0]; if(!f) return;
+  const r=new FileReader();
+  r.onload=()=>{ try{ const d=JSON.parse(r.result); if(d.ops&&d.ops.length){ OPS=d.ops; CUR=0; persist(); renderSelect(); loadForm(); run(); } else alert('Fichier invalide.'); }catch(e){ alert('Fichier illisible : '+e.message); } };
+  r.readAsText(f);
+}
+
+// ============ PHASAGE ============
+function renderPhases(){
+  const ph=OPS[CUR].phases;
+  document.getElementById('phases').innerHTML=ph.map((p,i)=>
+    '<div class="phrow"><input type="text" value="'+p.n.replace(/"/g,'&quot;')+'" onchange="OPS[CUR].phases['+i+'].n=this.value;persist()">'+
+    '<input type="date" value="'+p.d+'" onchange="OPS[CUR].phases['+i+'].d=this.value;persist()">'+
+    '<button type="button" class="del" onclick="OPS[CUR].phases.splice('+i+',1);persist();renderPhases()">×</button></div>').join('');
+}
+function addPhase(){ OPS[CUR].phases.push({n:"Nouvelle étape", d:v('dOS')||"2027-01-01"}); persist(); renderPhases(); }
+
+// ============ MOTEUR ============
+function getOp(){
+  return {
+    nom:v('nom'), type:v('type'), nb:+v('nb')||0, cout:+v('cout')||0, conv:+v('conv')||2000,
+    dpe1:v('dpe1'), dpe2:v('dpe2'), idf:+v('idf'), qpv:+v('qpv'), rdc:+v('rdc'), audit:+v('audit'),
+    dDepot:new Date(v('dDepot')), dMarche:new Date(v('dMarche')), dOS:new Date(v('dOS')), dLiv:new Date(v('dLiv')),
+    phases:OPS[CUR].phases.map(p=>({n:p.n, d:new Date(p.d)})).sort((a,b)=>a.d-b.d)
+  };
+}
+function run(){
+  saveCurrent();
+  const o=getOp();
+  document.getElementById('resTitle').textContent='2. Résultats — '+o.nom;
+  const evals=BASE.map(d=>({d, e:d.el(o)}));
+  const oks=evals.filter(x=>x.e.s==='ok'), maybes=evals.filter(x=>x.e.s==='maybe');
+
+  let subMin=0, subMax=0, pretMin=0, pretMax=0;
+  [...oks,...maybes].forEach(x=>{
+    if(x.d.sub){subMin+=x.d.sub[0]*o.nb*(x.e.s==='ok'?1:0); subMax+=x.d.sub[1]*o.nb;}
+    if(x.d.pret){pretMin+=x.d.pret[0]*o.nb*(x.e.s==='ok'?1:0); pretMax+=x.d.pret[1]*o.nb;}
+  });
+  document.getElementById('kpis').innerHTML=
+    kpi(oks.length+' / '+BASE.length,'dispositifs éligibles')+kpi(maybes.length,'à étudier')+
+    kpi(eur(subMin)+' – '+eur(subMax),'subventions & primes estimées')+
+    kpi(eur(pretMin)+' – '+eur(pretMax),'prêts bonifiés mobilisables');
+
+  const order={ok:0,maybe:1,no:2};
+  document.getElementById('v-dispos').innerHTML=evals.sort((a,b)=>order[a.e.s]-order[b.e.s]).map(x=>{
+    const bt={ok:['b-ok','ÉLIGIBLE'],maybe:['b-maybe','À ÉTUDIER'],no:['b-no','NON ÉLIGIBLE']}[x.e.s];
+    let m='';
+    if(x.e.s!=='no'){
+      if(x.d.sub) m+='<p><b>Ordre de grandeur :</b> '+eur(x.d.sub[0])+' à '+eur(x.d.sub[1])+' / logement (subvention/prime)</p>';
+      if(x.d.pret) m+='<p><b>Ordre de grandeur :</b> '+eur(x.d.pret[0])+' à '+eur(x.d.pret[1])+' / logement (prêt bonifié)</p>';
+      if(x.d.fiscal) m+='<p><b>Nature :</b> avantage fiscal (non compté dans les totaux — impact bilan majeur)</p>';
+      if(x.d.cumul) m+='<p><b>Cumul :</b> '+x.d.cumul+'</p>';
+    }
+    return '<div class="disp '+x.e.s+'"><h4>'+x.d.nom+'<span class="badge '+bt[0]+'">'+bt[1]+'</span></h4>'+
+      '<div class="fin">'+x.d.fin+' · '+x.d.cat+'</div><p>'+x.d.desc+'</p>'+m+
+      '<div class="reason">→ '+x.e.r+'</div><div class="meta">Fiche vérifiée le '+x.d.verifiedAt+' · <a href="'+x.d.url+'" target="_blank">Source ↗</a></div></div>';
+  }).join('');
+
+  let jal=[];
+  [...oks,...maybes].forEach(x=>x.d.jalons(o).forEach(j=>jal.push({...j, disp:x.d.nom})));
+  jal.sort((a,b)=>a.date-b.date);
+  window._jal=jal; window._opnom=o.nom;
+  const today=new Date();
+  document.getElementById('v-echeancier').innerHTML=
+    '<div class="exportbar"><button onclick="exportICS()">📅 Export agenda (.ics)</button><button onclick="exportCSV()">⬇ Export CSV</button></div>'+
+    '<table><tr><th>Date</th><th>Type</th><th>Jalon</th><th>Dispositif</th></tr>'+
+    jal.map(j=>{
+      const c={action:'c-action',limite:'c-limite',info:'c-info'}[j.type];
+      const lbl={action:'ACTION',limite:'DATE LIMITE',info:'INFO'}[j.type];
+      const late=j.date<today&&j.type!=='info';
+      return '<tr><td'+(late?' class="late"':'')+'>'+F(j.date)+(late?' ⚠ dépassé':'')+'</td>'+
+        '<td><span class="chip '+c+'">'+lbl+'</span></td><td>'+j.label+'</td><td style="color:var(--grey)">'+j.disp+'</td></tr>';
+    }).join('')+'</table>';
+
+  const ph=o.phases;
+  const bucket=j=>{ let b=-1; ph.forEach((p,i)=>{ if(p.d<=j.date) b=i; }); return b; };
+  const buckets=ph.map(()=>[]); const before=[];
+  jal.forEach(j=>{ const b=bucket(j); (b<0?before:buckets[b]).push(j); });
+  const rowPJ=j=>{
+    const c={action:'c-action',limite:'c-limite',info:'c-info'}[j.type];
+    const lbl={action:'ACTION',limite:'LIMITE',info:'INFO'}[j.type];
+    return '<div class="pj"><span class="dt">'+F(j.date)+'</span><span class="chip '+c+'">'+lbl+'</span><span>'+j.label+'<br><span class="dsp">'+j.disp+'</span></span></div>';
+  };
+  let html='';
+  if(before.length) html+='<div class="phase-block"><div class="phase-head">⏪ Avant la première étape saisie</div><div class="phase-body">'+before.map(rowPJ).join('')+'</div></div>';
+  ph.forEach((p,i)=>{
+    const end=i<ph.length-1?' → '+F(ph[i+1].d):'';
+    html+='<div class="phase-block"><div class="phase-head">'+(i+1)+'. '+p.n+'<span>'+F(p.d)+end+'</span></div><div class="phase-body">'+
+      (buckets[i].length?buckets[i].map(rowPJ).join(''):'<div class="empty-phase">Aucune action financement sur cette phase.</div>')+'</div></div>';
+  });
+  document.getElementById('v-phasage').innerHTML=html;
+
+  let al=[];
+  const instru=addM(o.dDepot,5);
+  if(o.dOS<instru) al.push("<b>Risque commencement d'exécution :</b> l'OS ("+F(o.dOS)+") tombe avant la fin d'instruction probable ("+F(instru)+"). Décaler l'OS ou obtenir une <b>autorisation de commencement anticipé écrite</b> par financeur.");
+  if(o.dMarche<=o.dDepot) al.push("<b>Marchés avant dépôt :</b> signer les marchés ("+F(o.dMarche)+") avant le dépôt ("+F(o.dDepot)+") peut valoir commencement d'exécution → inéligibilité. Inverser l'ordre.");
+  if(oks.concat(maybes).some(x=>x.d.id==='cee177')) al.push("<b>CEE :</b> convention avec l'obligé à signer <b>avant la signature des marchés</b> ("+F(o.dMarche)+"). Après, la prime est perdue.");
+  if(oks.some(x=>x.d.id==='secondevie')) al.push("<b>Seconde Vie :</b> l'agrément préalable conditionne TVA 5,5 % et TFPB. À obtenir avant l'OS ("+F(o.dOS)+") — ≈6 mois d'instruction.");
+  if(!o.audit&&o.type==='rehab') al.push("<b>Audit énergétique manquant :</b> il conditionne la rénovation globale CEE. À lancer immédiatement.");
+  const dur=(o.dLiv-o.dOS)/86400000/30;
+  if(dur>0&&dur<8&&o.nb>50) al.push("<b>Planning tendu :</b> "+Math.round(dur)+" mois de chantier pour "+o.nb+" logements — vérifier les clauses de caducité de chaque arrêté.");
+  al.push("<b>Rappel caducité :</b> chaque arrêté fixe ses propres délais. Les reporter ici dès réception et demander toute prorogation <b>avant</b> l'échéance.");
+  document.getElementById('v-alertes').innerHTML=al.map(a=>'<div class="alert">'+a+'</div>').join('');
+}
+const kpi=(vv,l)=>'<div class="kpi"><div class="v">'+vv+'</div><div class="l">'+l+'</div></div>';
+function show(id,btn){
+  ['dispos','echeancier','phasage','alertes','dash','folio'].forEach(x=>document.getElementById('v-'+x).style.display=x===id?'':'none');
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active')); btn.classList.add('active');
+}
+
+// ============ VUE PORTEFEUILLE ============
+function opSummary(rec,idx){
+  const o=opFromRecord(rec);
+  let eligibles=0, next=null, overdue=0;
+  const today=new Date(); today.setHours(0,0,0,0);
+  if(!isNaN(o.dDepot)&&!isNaN(o.dOS)){
+    BASE.forEach(d=>{
+      const e=d.el(o);
+      if(e.s==='no') return;
+      if(e.s==='ok') eligibles++;
+      d.jalons(o).forEach(j=>{
+        if(j.type==='info') return;
+        const days=Math.round((j.date-today)/86400000);
+        if(days<0&&days>=-90) overdue++;
+        else if(days>=0&&(!next||days<next.days)) next={days, label:j.label, date:j.date};
+      });
+    });
+  }
+  return {idx, nom:o.nom, type:{rehab:'Réhab',neuf:'Neuf',acqam:'Acq-am',demol:'Démol-rec'}[o.type]||o.type,
+    nb:o.nb, cout:o.cout, eligibles, next, overdue};
+}
+function renderFolio(){
+  const rows=OPS.map((r,i)=>opSummary(r,i));
+  let html='<div class="exportbar"><button onclick="newOp();renderFolio()">+ Nouvelle opération</button></div>'+
+    '<p style="font-size:12px;color:var(--grey);margin-bottom:12px">Ton portefeuille ('+rows.length+' opération'+(rows.length>1?'s':'')+'). Clique sur une ligne pour ouvrir l\'opération ; le formulaire à gauche s\'y rattache.</p>'+
+    '<table><tr><th>Opération</th><th>Type</th><th>Lgts</th><th>Coût travaux</th><th>Éligibles</th><th>Prochaine échéance</th><th>Retards</th><th></th></tr>'+
+    rows.map(r=>'<tr style="cursor:pointer'+(r.idx===CUR?';background:var(--accent-light)':'')+'" onclick="switchOp('+r.idx+');renderFolio()">'+
+      '<td><b>'+r.nom+'</b>'+(r.idx===CUR?' <span class="chip c-action">OUVERTE</span>':'')+'</td>'+
+      '<td>'+r.type+'</td><td>'+r.nb+'</td><td>'+eur(r.cout)+'</td>'+
+      '<td>'+r.eligibles+' / '+BASE.length+'</td>'+
+      '<td>'+(r.next?('<b>J-'+r.next.days+'</b> ('+F(r.next.date)+')<br><span style="font-size:11px;color:var(--grey)">'+r.next.label.substring(0,55)+'…</span>'):'—')+'</td>'+
+      '<td>'+(r.overdue?'<span class="chip c-limite">'+r.overdue+' ⚠</span>':'<span class="chip c-info">0</span>')+'</td>'+
+      '<td onclick="event.stopPropagation()"><button class="mini" style="margin:0" onclick="CUR='+r.idx+';dupOp();renderFolio()">⧉</button> '+
+      '<button class="mini" style="margin:0;color:var(--warn)" onclick="CUR='+r.idx+';delOp();renderFolio()">✕</button></td></tr>').join('')+
+    '</table>';
+  document.getElementById('v-folio').innerHTML=html;
+}
+
+// ============ SPRINT 3 : ÉCHÉANCES CONSOLIDÉES + RAPPELS ============
+function opFromRecord(rec){
+  const f=rec.form;
+  return {
+    nom:f.nom, type:f.type, nb:+f.nb||0, cout:+f.cout||0, conv:+f.conv||2000,
+    dpe1:f.dpe1, dpe2:f.dpe2, idf:+f.idf, qpv:+f.qpv, rdc:+f.rdc, audit:+f.audit,
+    dDepot:new Date(f.dDepot), dMarche:new Date(f.dMarche), dOS:new Date(f.dOS), dLiv:new Date(f.dLiv),
+    phases:(rec.phases||[]).map(p=>({n:p.n, d:new Date(p.d)}))
+  };
+}
+function allDeadlines(){
+  const today=new Date(); today.setHours(0,0,0,0);
+  const items=[];
+  OPS.forEach(rec=>{
+    const o=opFromRecord(rec);
+    if(isNaN(o.dDepot)||isNaN(o.dOS)) return;
+    BASE.forEach(d=>{
+      const e=d.el(o);
+      if(e.s==='no') return;
+      d.jalons(o).forEach(j=>{
+        if(j.type==='info') return;
+        const days=Math.round((j.date-today)/86400000);
+        if(days>=-60&&days<=120) items.push({op:o.nom, disp:d.nom, j, days});
+      });
+    });
+  });
+  return items.sort((a,b)=>a.days-b.days);
+}
+function renderDash(){
+  const items=allDeadlines();
+  const grp=[['⚠ DÉPASSÉ',x=>x.days<0,'var(--warn)'],['🔴 Sous 7 jours',x=>x.days>=0&&x.days<=7,'var(--warn)'],
+    ['🟠 Sous 30 jours',x=>x.days>7&&x.days<=30,'var(--maybe)'],['🟡 Sous 60 jours',x=>x.days>30&&x.days<=60,'#8a7a00'],
+    ['⚪ 60-120 jours',x=>x.days>60,'var(--grey)']];
+  let html='<div class="exportbar"><button onclick="askNotif()" id="notifBtn">🔔 Activer les rappels navigateur</button></div>'+
+    '<p style="font-size:12px;color:var(--grey);margin-bottom:12px">Toutes les échéances ACTION et DATE LIMITE de <b>toutes tes opérations</b> ('+OPS.length+'), fenêtre J-60 → J+120. Les rappels navigateur signalent les échéances ≤ 7 jours à chaque ouverture.</p>';
+  grp.forEach(([t,fn,col])=>{
+    const g=items.filter(fn);
+    if(!g.length) return;
+    html+='<div class="phase-block"><div class="phase-head" style="background:'+col+'">'+t+' <span>('+g.length+')</span></div><div class="phase-body">'+
+      g.map(x=>'<div class="pj"><span class="dt">'+F(x.j.date)+'<br><b>J'+(x.days>=0?'-':'+')+Math.abs(x.days)+'</b></span>'+
+      '<span class="chip '+(x.j.type==='limite'?'c-limite':'c-action')+'">'+(x.j.type==='limite'?'LIMITE':'ACTION')+'</span>'+
+      '<span>'+x.j.label+'<br><span class="dsp">'+x.op+' · '+x.disp+'</span></span></div>').join('')+'</div></div>';
+  });
+  if(!items.length) html+='<p style="color:var(--no);font-style:italic">Aucune échéance dans la fenêtre. Tranquillité (méfie-toi quand même).</p>';
+  document.getElementById('v-dash').innerHTML=html;
+}
+function askNotif(){
+  if(!('Notification' in window)){ alert('Notifications non supportées par ce navigateur.'); return; }
+  Notification.requestPermission().then(p=>{ if(p==='granted'){ document.getElementById('notifBtn').textContent='🔔 Rappels activés'; fireNotifs(); } });
+}
+function fireNotifs(){
+  if(!('Notification' in window)||Notification.permission!=='granted') return;
+  const urgent=allDeadlines().filter(x=>x.days>=0&&x.days<=7).slice(0,5);
+  urgent.forEach((x,i)=>setTimeout(()=>new Notification('⏰ J-'+x.days+' — '+x.op,{body:x.j.label+' ('+x.disp+')'}),i*800));
+}
+function exportCSV(){
+  if(!window._jal) return;
+  const esc=s=>'"'+String(s).replace(/"/g,'""')+'"';
+  const rows=[['Date','Type','Jalon','Dispositif']].concat(
+    window._jal.map(j=>[j.date.toLocaleDateString('fr-FR'),{action:'Action',limite:'Date limite',info:'Info'}[j.type],j.label,j.disp]));
+  const csv='﻿'+rows.map(r=>r.map(esc).join(';')).join('\r\n');
+  dl(new Blob([csv],{type:'text/csv;charset=utf-8'}),'echeancier_subventions.csv');
+}
+function exportICS(){
+  if(!window._jal) return;
+  const pad=n=>String(n).padStart(2,'0');
+  const dstr=d=>d.getFullYear()+pad(d.getMonth()+1)+pad(d.getDate());
+  const now=new Date(), stamp=dstr(now)+'T000000Z';
+  const esc=s=>String(s).replace(/([,;])/g,'\\$1');
+  let ics='BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//SimulateurMOA//FR\r\nCALSCALE:GREGORIAN\r\n';
+  window._jal.forEach((j,i)=>{
+    const pfx={action:'[ACTION] ',limite:'[DATE LIMITE] ',info:'[INFO] '}[j.type];
+    const end=new Date(j.date); end.setDate(end.getDate()+1);
+    ics+='BEGIN:VEVENT\r\nUID:simu-'+Date.now()+'-'+i+'@moa\r\nDTSTAMP:'+stamp+
+      '\r\nDTSTART;VALUE=DATE:'+dstr(j.date)+'\r\nDTEND;VALUE=DATE:'+dstr(end)+
+      '\r\nSUMMARY:'+esc(pfx+j.label)+'\r\nDESCRIPTION:'+esc('Opération : '+(window._opnom||'')+' — Dispositif : '+j.disp)+'\r\n';
+    if(j.type==='limite') ics+='BEGIN:VALARM\r\nTRIGGER:-P30D\r\nACTION:DISPLAY\r\nDESCRIPTION:'+esc('J-30 : '+j.label)+'\r\nEND:VALARM\r\n';
+    ics+='END:VEVENT\r\n';
+  });
+  ics+='END:VCALENDAR\r\n';
+  dl(new Blob([ics],{type:'text/calendar;charset=utf-8'}),'echeancier_subventions.ics');
+}
+function dl(blob,name){ const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name; a.click(); }
+
+load(); renderSelect(); loadForm(); run(); fireNotifs();
+</script>
+</body>
+</html>

@@ -1,0 +1,41 @@
+name: Veille subventions
+
+on:
+  schedule:
+    - cron: '0 6 * * 1'   # chaque lundi 06:00 UTC
+  workflow_dispatch: {}    # + lancement manuel depuis l'onglet Actions
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  veille:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Rafraîchir les snapshots des sources
+        run: node veille.js
+
+      - name: Ouvrir une PR si une source a changé
+        uses: peter-evans/create-pull-request@v6
+        with:
+          commit-message: "veille: sources officielles modifiées"
+          branch: veille/update
+          delete-branch: true
+          title: "⚠ Veille : une source officielle a changé — vérifier la base"
+          body: |
+            Le contenu d'au moins une page source a changé depuis la dernière vérification.
+
+            **À faire (2 minutes) :**
+            1. Ouvrir l'onglet « Files changed » pour voir ce qui a changé dans les snapshots.
+            2. Si le changement impacte un dispositif (montant, critère, guichet) : modifier la fiche correspondante dans `dispositifs.js` **dans cette PR** (+ mettre à jour `verifiedAt` et `meta.version`).
+            3. Si c'est du bruit éditorial : merger tel quel (les snapshots se mettent à jour, la base ne bouge pas).
+
+            Le merge déclenche automatiquement le déploiement Netlify.
+          labels: veille
